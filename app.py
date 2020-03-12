@@ -154,7 +154,7 @@ app_color = {"graph_bg": "#082255", "graph_line": "#007ACE"}
 
 
 fig1 = px.imshow(np.zeros((66,66)))
-fig1.update_layout(width=1000, height=1000)
+fig1.update_layout(width=700, height=700)
 app.layout = html.Div(children=[
     html.H1('Simulation de gravure magnétique au laser \n à l\'aide du modèle d\'Ising'),
     dcc.Graph(
@@ -253,7 +253,7 @@ def update_figure(H0,T0,R,Tmax,sigma,D,nIter):
     spin= main(-H0,T0,R,100,Tmax,sigma,D,nIter)
     
     fig = px.imshow(spin, color_continuous_scale='gray')
-    fig.update_layout(width=1000, height=1000)
+    fig.update_layout(width=700, height=700)
 
 
 
