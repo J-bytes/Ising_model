@@ -23,13 +23,9 @@ def  Energie(spin,N,T,H,J,couleur) :
 
 
         #Calcul E et Eprime
-        up=spin[1:N+1,2:N+2]
 
-        down=spin[1:N+1,0:N]
-        left=spin[0:N,1:N+1]
-        right=spin[2:N+2,1:N+1]
-        E=-J*spin[1:N+1,1:N+1]*(up+down+left+right)-H*spin[1:N+1,1:N+1]
-        #gpu(spin,H,N,E)
+        E=-J*spin[1:N+1,1:N+1]*(spin[1:N+1,2:N+2]+spin[1:N+1,0:N]+spin[0:N,1:N+1]+spin[2:N+2,1:N+1])-H*spin[1:N+1,1:N+1]
+
 
         p=np.exp((2*E)/T[1:N+1,1:N+1])
 
@@ -63,7 +59,7 @@ def periodic(f,N):
 def main(H0,T0,R,t0,Tmax,sigma,D,nIter) :
     #Définition des paramètres globaux
     H0=H0/10
-    print(R)
+
     T0/=10
     D=D/100
 
@@ -77,36 +73,33 @@ def main(H0,T0,R,t0,Tmax,sigma,D,nIter) :
     J=1
     #Déclaration des tableaux
     #spin=-1+2*np.random.randint(low=0,high=2,size=(N+2,N+2)) #spin aléatoire initial [-1,1]
-    spin=np.zeros((N+2,N+2))+1 #spin initial
+    spin=np.zeros((N+2,N+2),dtype=np.int8)+1 #spin initial
 
     #Calcul préalable de la région chauffée
     x0=np.int(N/2) # on centre notre laser
     y0=x0
-    f=np.zeros((N,N))
+    f=np.zeros((N,N),dtype=np.int8)
     for i in range(0,N) :
         for j in range(0,N) :
                 r=(j-y0)**2+(i-x0)**2
                 if r<=R**2 :
                     f[i][j]=1
 
-    #tableau d'output
-    E_moyen=np.zeros(nIter)
-    M=np.zeros(nIter)
 
     #Tableau d'indice
-    spinNoir = np.ones((N+2,N+2))
+    spinNoir = np.ones((N+2,N+2),dtype=np.int8)
     spinNoir[::2,::2] = 0
     spinNoir[1::2,1::2] = 0
     #spinNoir=np.where(spinNoir==0)
     #spinBlanc=np.where(spinNoir==0)
-    spinBlanc = np.ones((N+2,N+2))
+    spinBlanc = np.ones((N+2,N+2),dtype=np.int8)
     spinBlanc[1::2,::2] = 0
     spinBlanc[::2,1::2] = 0
     spinBlanc=spinBlanc[1:N+1,1:N+1]
     spinNoir=spinNoir[1:N+1,1:N+1]
 
     #Champs magnétique et Température
-    T=np.zeros((N+2,N+2))+T0
+    T=np.zeros((N+2,N+2),dtype=np.float32)+T0
     H=H0
     #Itération temporelle
     for i in range(0,nIter) :
@@ -127,13 +120,12 @@ def main(H0,T0,R,t0,Tmax,sigma,D,nIter) :
 
 
 
-        E_mean=np.mean(E)
+
         #print(E_mean)
         #print(E)
         #print(spin[1:N+1,1:N+1])
-        m=np.mean(spin[1:N+1,1:N+1])
-        E_moyen[i]=E_mean
-        M[i]=m
+
+
         #Animation.append([plt.imshow(spin, animated=True)])
         spin=periodic(spin,N)
         T=periodic(T,N)
@@ -141,7 +133,7 @@ def main(H0,T0,R,t0,Tmax,sigma,D,nIter) :
            # plt.imshow(spin)
            # plt.show()
 
-    return E_moyen,M,spin
+    return spin
 
 import dash
 import dash_core_components as dcc
@@ -258,7 +250,7 @@ def update_figure(H0,T0,R,Tmax,sigma,D,nIter):
 
 
 
-    E_moyen,M,spin= main(-H0,T0,R,100,Tmax,sigma,D,nIter)
+    spin= main(-H0,T0,R,100,Tmax,sigma,D,nIter)
     print('working')
     fig = px.imshow(spin, color_continuous_scale='gray')
     fig.update_layout(width=400, height=400)
