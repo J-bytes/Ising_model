@@ -10,8 +10,7 @@ from random import randint
 import numpy as np
 import flask
 from numba import njit
-import plotly
-import plotly.graph_objects as go
+
 import plotly.express as px
 @njit(cache=True)
 def diffusif_leapfrog(c,N,D,dt,dx):
@@ -148,7 +147,7 @@ import dash
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output
-import h5py
+
 
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
