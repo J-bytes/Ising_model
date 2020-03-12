@@ -251,7 +251,7 @@ def update_figure(H0,T0,R,Tmax,sigma,D,nIter):
 
 
     spin= main(-H0,T0,R,100,Tmax,sigma,D,nIter)
-    print('working')
+    
     fig = px.imshow(spin, color_continuous_scale='gray')
     fig.update_layout(width=400, height=400)
 
