@@ -1,0 +1,6 @@
+gunicorn>=20.0.4
+plotly>=4.5.0
+dash>=1.8.0
+numpy>=1.18
+requests==2.19.1 
+numba>=0.47.0
