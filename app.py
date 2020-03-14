@@ -12,20 +12,23 @@ import flask
 from numba import njit
 
 import plotly.express as px
-@njit(cache=True)
+#@njit(cache=True)
 def diffusif_leapfrog(c,N,D,dt,dx):
 
     return D*dt/dx**2*((c[1:N+1,2:N+2] + c[2:N+2,1:N+1] - 4*c[1:N+1,1:N+1] + c[1:N+1,0:N] + c[0:N,1:N+1]))
 
-
-@njit(cache=True)
-def  Energie(spin,N,T,H,J,couleur) :
+#@njit(cache=True)
+def  Energie4(spin,N,T,H,J,couleur) :
 
 
         #Calcul E et Eprime
+        up=spin[1:N+1,2:N+2]
 
-        E=-J*spin[1:N+1,1:N+1]*(spin[1:N+1,2:N+2]+spin[1:N+1,0:N]+spin[0:N,1:N+1]+spin[2:N+2,1:N+1])-H*spin[1:N+1,1:N+1]
-
+        down=spin[1:N+1,0:N]
+        left=spin[0:N,1:N+1]
+        right=spin[2:N+2,1:N+1]
+        E=-J*spin[1:N+1,1:N+1]*(up+down+left+right)-H*spin[1:N+1,1:N+1]
+        #gpu(spin,H,N,E)
 
         p=np.exp((2*E)/T[1:N+1,1:N+1])
 
@@ -37,7 +40,71 @@ def  Energie(spin,N,T,H,J,couleur) :
 
 
         return spin,E
-@njit(cache=True)
+
+#@njit(cache=True)
+def  Energie8(spin,N,T,H,J,couleur) :
+
+
+        #Calcul E et Eprime
+        #premier voisins
+        up=spin[1:N+1,2:N+2]
+        down=spin[1:N+1,0:N]
+        left=spin[0:N,1:N+1]
+        right=spin[2:N+2,1:N+1]
+        premiervoisins=2*(up+down+left+right)
+
+        #coins
+        upd=spin[2:N+2,2:N+2] #en haut a droite
+        upg=spin[0:N,2:N+2] #en haut a gauche
+        downd=spin[2:N+2,0:N]
+        downg=spin[0:N,0:N]
+        secondvoisins=(upd+downd+upg+downg)
+        E=-J*spin[1:N+1,1:N+1]*(premiervoisins+secondvoisins)-H*spin[1:N+1,1:N+1]
+        #gpu(spin,H,N,E)
+
+        p=np.exp((2*E)/T[1:N+1,1:N+1])
+
+
+        p2=np.reshape(np.random.rand(N**2),(N,N))
+        p3=np.where(np.logical_and(p2<p,couleur==1),-1,1)
+        spin[1:N+1,1:N+1]*=p3
+
+
+
+        return spin,E
+
+#@njit(cache=True)
+def  Energie6(spin,N,T,H,J,couleur) :
+
+
+
+        #Calcul E et Eprime
+        #premier voisins
+        up=spin[1:N+1,2:N+2]
+        down=spin[1:N+1,0:N]
+        left=spin[0:N,1:N+1]
+        right=spin[2:N+2,1:N+1]
+        premiervoisins=(up+down+left+right)
+
+        #coin
+        downd=spin[2:N+2,0:N]
+        downg=spin[0:N,0:N]
+        secondvoisins=(downd+downg)
+        E=-J*spin[1:N+1,1:N+1]*(premiervoisins+secondvoisins)-H*spin[1:N+1,1:N+1]
+        #gpu(spin,H,N,E)
+        p=np.exp((2*E)/T[1:N+1,1:N+1])
+
+
+        p2=np.reshape(np.random.rand(N**2),(N,N))
+        p3=np.where(np.logical_and(p2<p,couleur==1),-1,1)
+        spin[1:N+1,1:N+1]*=p3
+
+
+
+        return spin,E
+
+
+#@njit(cache=True)
 def periodic(f,N):
 
     #périodicite horizontale et verticale
@@ -54,26 +121,78 @@ def periodic(f,N):
     f[N+1,0]=f[2,N-1]
 
     return f
+
+
+#@njit(cache=True)
+def indice4(N) :
+    spin=np.zeros((N+2,N+2))+1 #spin initial
+     #Tableau d'indice
+    spinNoir = np.ones((N+2,N+2))
+    spinNoir[::2,::2] = 0
+    spinNoir[1::2,1::2] = 0
+    #spinNoir=np.where(spinNoir==0)
+    #spinBlanc=np.where(spinNoir==0)
+    spinBlanc = np.ones((N+2,N+2))
+    spinBlanc[1::2,::2] = 0
+    spinBlanc[::2,1::2] = 0
+    spinBlanc=spinBlanc[1:N+1,1:N+1]
+    spinNoir=spinNoir[1:N+1,1:N+1]
+    return spin,[spinNoir,spinBlanc]
+#@njit(cache=True)
+def indice8(N) :
+    spin=np.zeros((N+2,N+2))+1 #spin initial
+     #Tableau d'indice
+    spinbleu = np.zeros((N+2,N+2),dtype=np.bool)
+    spinbleu[::2,::2] = 1
+
+    spinvert= np.zeros((N+2,N+2),dtype=np.bool)
+    spinvert[1::2,::2]=1
+
+    spinjaune= np.zeros((N+2,N+2),dtype=np.bool)
+    spinjaune[1::2,1::2]=1
+
+    spinorange= np.zeros((N+2,N+2),dtype=np.bool)
+    spinorange[::2,1::2]=1
+
+
+    spinbleu=spinbleu[1:N+1,1:N+1]
+    spinvert=spinvert[1:N+1,1:N+1]
+    spinjaune=spinjaune[1:N+1,1:N+1]
+    spinorange=spinorange[1:N+1,1:N+1]
+    return spin,[spinbleu,spinvert,spinjaune,spinorange]
+
+
 #---------------------------------------------------
-@njit
-def main(H0,T0,R,t0,Tmax,sigma,D,nIter) :
+#@njit
+def main(H0,T0,R,t0,Tmax,sigma,D,nIter,stencil) :
     #Définition des paramètres globaux
     H0=H0/10
-
     T0/=10
     D=D/100
-
     Tmax/=100
-
     #filtered_df = df[df.year == selected_year]
     dT=Tmax-T0
     N=64
 
 
-    J=1
+
     #Déclaration des tableaux
     #spin=-1+2*np.random.randint(low=0,high=2,size=(N+2,N+2)) #spin aléatoire initial [-1,1]
-    spin=np.zeros((N+2,N+2),dtype=np.int8)+1 #spin initial
+    if stencil=='4' :
+        spin,couleur=indice4(N)
+        J=1
+        Energie=Energie4
+
+    elif stencil=='8' :
+        spin,couleur=indice8(N)
+        Energie=Energie8
+        J=1/3
+
+    elif stencil=='6':
+        spin,couleur=indice8(N)
+        Energie=Energie6
+        J=2/3
+
 
     #Calcul préalable de la région chauffée
     x0=np.int(N/2) # on centre notre laser
@@ -85,18 +204,6 @@ def main(H0,T0,R,t0,Tmax,sigma,D,nIter) :
                 if r<=R**2 :
                     f[i][j]=1
 
-
-    #Tableau d'indice
-    spinNoir = np.ones((N+2,N+2),dtype=np.int8)
-    spinNoir[::2,::2] = 0
-    spinNoir[1::2,1::2] = 0
-    #spinNoir=np.where(spinNoir==0)
-    #spinBlanc=np.where(spinNoir==0)
-    spinBlanc = np.ones((N+2,N+2),dtype=np.int8)
-    spinBlanc[1::2,::2] = 0
-    spinBlanc[::2,1::2] = 0
-    spinBlanc=spinBlanc[1:N+1,1:N+1]
-    spinNoir=spinNoir[1:N+1,1:N+1]
 
     #Champs magnétique et Température
     T=np.zeros((N+2,N+2),dtype=np.float32)+T0
@@ -112,11 +219,10 @@ def main(H0,T0,R,t0,Tmax,sigma,D,nIter) :
         #Vrm pas sure pour Eprime
         #operation sur les blancs
 
-        spin,E=Energie(spin,N,T,H,J,spinBlanc)
+         #operation sur les différentes couleur
+        for color in couleur :
+            spin,E=Energie(spin,N,T,H,J,color)
 
-        #operation sur les noirs
-
-        spin,E=Energie(spin,N,T,H,J,spinNoir)
 
 
 
@@ -163,6 +269,18 @@ app.layout = html.Div(children=[
         figure=fig1
     ),
 
+         html.Label('Stencil'),
+    html.Div(dcc.Dropdown(
+    options=[
+        {'label': 'Carre 8', 'value': '8'},
+        {'label': 'triangulaire 6', 'value': '6'},
+        {'label': 'closest 4', 'value': '4'}
+    ],
+    searchable=True,
+    id='stencil',
+    value='4',
+    placeholder="Stencil"),  style= {'padding': 20}),
+
 
         html.Label('Champs magnétique en mT'),
     html.Div(dcc.Slider(
@@ -194,7 +312,7 @@ app.layout = html.Div(children=[
 
 
 
-         html.Label('Température maximale'),
+         html.Label('Coefficient de chauffage du laser'),
     html.Div(dcc.Slider(
         id='Tmax',
         min=10,
@@ -238,7 +356,8 @@ app.layout = html.Div(children=[
 
 @app.callback(
     Output('graph-with-slider', 'figure'),
-    [Input('H0', 'value'),
+    [Input('stencil', 'value'),
+    Input('H0', 'value'),
     Input('T0', 'value'),
     Input('R', 'value'),
     Input('Tmax', 'value'),
@@ -246,12 +365,12 @@ app.layout = html.Div(children=[
     Input('D', 'value'),
     Input('nIter', 'value')])
 
-def update_figure(H0,T0,R,Tmax,sigma,D,nIter):
+def update_figure(stencil,H0,T0,R,Tmax,sigma,D,nIter):
 
 
+    print('stencil=',stencil,type(stencil))
+    spin= main(-H0,T0,R,100,Tmax,sigma,D,nIter,stencil)
 
-    spin= main(-H0,T0,R,100,Tmax,sigma,D,nIter)
-    
     fig = px.imshow(spin, color_continuous_scale='gray')
     fig.update_layout(width=700, height=700)
 
