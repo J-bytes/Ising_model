@@ -125,22 +125,22 @@ def periodic(f,N):
 
 #@njit(cache=True)
 def indice4(N) :
-    spin=np.zeros((N+2,N+2))+1 #spin initial
+    spin=np.ones((N+2,N+2),dtype=np.int8) #spin initial
      #Tableau d'indice
-    spinNoir = np.ones((N+2,N+2))
-    spinNoir[::2,::2] = 0
-    spinNoir[1::2,1::2] = 0
+    spinNoir = np.zeros((N+2,N+2),dtype=np.bool)
+    spinNoir[::2,::2] = 1
+    spinNoir[1::2,1::2] = 1
     #spinNoir=np.where(spinNoir==0)
     #spinBlanc=np.where(spinNoir==0)
-    spinBlanc = np.ones((N+2,N+2))
-    spinBlanc[1::2,::2] = 0
-    spinBlanc[::2,1::2] = 0
+    spinBlanc = np.zeros((N+2,N+2))
+    spinBlanc[1::2,::2] = 1
+    spinBlanc[::2,1::2] = 1
     spinBlanc=spinBlanc[1:N+1,1:N+1]
     spinNoir=spinNoir[1:N+1,1:N+1]
     return spin,[spinNoir,spinBlanc]
 #@njit(cache=True)
 def indice8(N) :
-    spin=np.zeros((N+2,N+2))+1 #spin initial
+    spin=np.ones((N+2,N+2),dtype=np.int8) #spin initial
      #Tableau d'indice
     spinbleu = np.zeros((N+2,N+2),dtype=np.bool)
     spinbleu[::2,::2] = 1
@@ -174,7 +174,8 @@ def main(H0,T0,R,t0,Tmax,sigma,D,nIter,stencil) :
     dT=Tmax-T0
     N=64
 
-
+    E2=np.zeros(nIter)
+    M2=np.zeros(nIter)
 
     #Déclaration des tableaux
     #spin=-1+2*np.random.randint(low=0,high=2,size=(N+2,N+2)) #spin aléatoire initial [-1,1]
@@ -223,7 +224,8 @@ def main(H0,T0,R,t0,Tmax,sigma,D,nIter,stencil) :
         for color in couleur :
             spin,E=Energie(spin,N,T,H,J,color)
 
-
+        E2[i]=np.mean(E)
+        M2[i]=np.mean(spin)
 
 
 
@@ -239,7 +241,7 @@ def main(H0,T0,R,t0,Tmax,sigma,D,nIter,stencil) :
            # plt.imshow(spin)
            # plt.show()
 
-    return spin
+    return E2,M2,spin
 
 import dash
 import dash_core_components as dcc
@@ -260,16 +262,74 @@ app_color = {"graph_bg": "#082255", "graph_line": "#007ACE"}
 
 
 fig1 = px.imshow(np.zeros((66,66)))
-fig1.update_layout(width=700, height=700)
+fig1.update_layout(width=400, height=400)
+
+
+
+
 app.layout = html.Div(children=[
     html.H1('Simulation de gravure magnétique au laser \n à l\'aide du modèle d\'Ising'),
-    dcc.Graph(
+
+    html.Div(children=[
+    html.Div(children=[
+        dcc.Graph(
         id='graph-with-slider',
         animate=False,
         figure=fig1
-    ),
+    )],
+        className="six columns"),
 
-         html.Label('Stencil'),
+
+    html.Div(children=[
+        dcc.Graph(
+        id='graph-Energy',
+        figure={
+            'data': [
+                {
+                    'x': [1, 2, 3, 4],
+                    'y': [4, 1, 3, 5],
+                    'text': ['a', 'b', 'c', 'd'],
+                    'customdata': ['c.a', 'c.b', 'c.c', 'c.d'],
+                    'name': 'Trace 1',
+                    'mode': 'markers',
+                    'marker': {'size': 12}
+                },
+                {
+                    'x': [1, 2, 3, 4],
+                    'y': [9, 4, 1, 4],
+                    'text': ['w', 'x', 'y', 'z'],
+                    'customdata': ['c.w', 'c.x', 'c.y', 'c.z'],
+                    'name': 'Trace 2',
+                    'mode': 'markers',
+                    'marker': {'size': 12}
+                }
+            ],
+            'layout': {
+                'clickmode': 'event+select',
+                 'title' : "Energie et magnétisation",
+                'xaxis':{
+                    'title':'temps en ms'
+                },
+                'yaxis':{
+                     'title':'voltage en mV'
+                },
+                'width':'600',
+                'height':'300'
+
+
+
+            }
+        }
+    )],
+    className="six columns"),
+    ]),
+
+app.css.append_css({
+    'external_url': 'https://codepen.io/chriddyp/pen/bWLwgP.css'
+}),
+
+
+        html.Label('Stencil'),
     html.Div(dcc.Dropdown(
     options=[
         {'label': 'Carre 8', 'value': '8'},
@@ -355,7 +415,8 @@ app.layout = html.Div(children=[
 
 
 @app.callback(
-    Output('graph-with-slider', 'figure'),
+    [Output('graph-with-slider', 'figure'),
+    Output('graph-Energy', 'figure')],
     [Input('stencil', 'value'),
     Input('H0', 'value'),
     Input('T0', 'value'),
@@ -369,16 +430,50 @@ def update_figure(stencil,H0,T0,R,Tmax,sigma,D,nIter):
 
 
     print('stencil=',stencil,type(stencil))
-    spin= main(-H0,T0,R,100,Tmax,sigma,D,nIter,stencil)
-
+    E,M,spin= main(-H0,T0,R,100,Tmax,sigma,D,nIter,stencil)
+    x2=np.arange(0,nIter)
     fig = px.imshow(spin, color_continuous_scale='gray')
-    fig.update_layout(width=700, height=700)
+    fig.update_layout(width=400, height=400,title='État final des spins')
+
+
+    graph2= {
+        'data' : [dict
+                (
+                    x=x2,
+                    y=E,
+                    text=['a', 'b', 'c', 'd'],
+                    customdata=['c.a', 'c.b', 'c.c', 'c.d'],
+                    name='Énergie moyenne par spin',
+                    mode='lines',
+                    marker={'size': 4}
+                ),
+                dict
+                (
+                    x=x2,
+                    y=M,
+                    text=['a', 'b', 'c', 'd'],
+                    customdata=['c.a', 'c.b', 'c.c', 'c.d'],
+                    name='Magnétisation moyenne',
+                    mode='lines',
+                    marker={'size': 4}
+                )
+            ],
+        'layout': {
+                'clickmode': 'event+select',
+                'title' : "Voltage en fonction du temps",
+                'xaxis':{
+                    'title':'temps en ms'
+                },
+                'yaxis':{
+                     'title':'voltage en mV'
+                }
+            }
+    }
 
 
 
 
-
-    return fig
+    return fig,graph2
 
 
 
