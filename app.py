@@ -342,7 +342,7 @@ app.css.append_css({
     placeholder="Stencil"),  style= {'padding': 20}),
 
 
-        html.Label('Champs magnétique en mT'),
+        html.Label('Champs magnétique x10**(1) '),
     html.Div(dcc.Slider(
         id='H0',
         min=0,
@@ -351,7 +351,7 @@ app.css.append_css({
         value=2,
     ), style= {'padding': 20}),
 
-        html.Label('Température basale'),
+        html.Label('Température basale x10**(1)'),
     html.Div(dcc.Slider(
         id='T0',
         min=0,
@@ -372,7 +372,7 @@ app.css.append_css({
 
 
 
-         html.Label('Coefficient de chauffage du laser'),
+         html.Label('Coefficient de chauffage du laser x10**(2)'),
     html.Div(dcc.Slider(
         id='Tmax',
         min=10,
@@ -390,7 +390,7 @@ app.css.append_css({
         value=10,
     ), style= {'padding': 20}),
 
-         html.Label('Coefficient de Diffusion D en mD'),
+         html.Label('Coefficient de Diffusion D x10**(3)'),
     html.Div(dcc.Slider(
         id='D',
         min=0,
@@ -429,7 +429,7 @@ app.css.append_css({
 def update_figure(stencil,H0,T0,R,Tmax,sigma,D,nIter):
 
 
-    print('stencil=',stencil,type(stencil))
+    print('H0=',H0)
     E,M,spin= main(-H0,T0,R,100,Tmax,sigma,D,nIter,stencil)
     x2=np.arange(0,nIter)
     fig = px.imshow(spin, color_continuous_scale='gray')
@@ -460,12 +460,12 @@ def update_figure(stencil,H0,T0,R,Tmax,sigma,D,nIter):
             ],
         'layout': {
                 'clickmode': 'event+select',
-                'title' : "Voltage en fonction du temps",
+                'title' : "Énergie et magnétisation moyenne",
                 'xaxis':{
-                    'title':'temps en ms'
+                    'title':'Nombre d\'iteration'
                 },
                 'yaxis':{
-                     'title':'voltage en mV'
+                     'title':'Energie/spin moyen'
                 }
             }
     }
