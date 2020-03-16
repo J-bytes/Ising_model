@@ -342,6 +342,17 @@ app.css.append_css({
     placeholder="Stencil"),  style= {'padding': 20}),
 
 
+     html.Label('Répétition pour calcul d\'erreur'),
+    html.Div(dcc.Slider(
+        id='Repetition',
+        min=0,
+        max=5,
+        marks={i: '{}'.format(i) if i == 1 else str(i) for i in range(0,5,1)},
+        value=1,
+    ), style= {'padding': 20}),
+
+
+
         html.Label('Champs magnétique x10**(1) '),
     html.Div(dcc.Slider(
         id='H0',
@@ -418,6 +429,7 @@ app.css.append_css({
     [Output('graph-with-slider', 'figure'),
     Output('graph-Energy', 'figure')],
     [Input('stencil', 'value'),
+    Input('Repetition', 'value'),
     Input('H0', 'value'),
     Input('T0', 'value'),
     Input('R', 'value'),
@@ -426,11 +438,31 @@ app.css.append_css({
     Input('D', 'value'),
     Input('nIter', 'value')])
 
-def update_figure(stencil,H0,T0,R,Tmax,sigma,D,nIter):
+def update_figure(stencil,repetition,H0,T0,R,Tmax,sigma,D,nIter):
 
 
     print('H0=',H0)
-    E,M,spin= main(-H0,T0,R,100,Tmax,sigma,D,nIter,stencil)
+    E_mean=[]
+    M_mean=[]
+    for i in range(0,repetition) :
+        E2,M2,spin= main(-H0,T0,R,100,Tmax,sigma,D,nIter,stencil)
+        E_mean.append(E2)
+        M_mean.append(M2)
+
+    E=np.zeros(len(E2))
+    E_err=np.zeros(len(E2))
+    E_mean=np.array(E_mean)
+    M=np.zeros(len(E2))
+    M_err=np.zeros(len(E2))
+    M_mean=np.array(M_mean)
+    for i in range(0,len(E2)) :
+        E[i]=np.mean(E_mean[:,i])
+        E_err[i]=np.std(E_mean[:,i])
+        M[i]=np.mean(M_mean[:,i])
+        M_err[i]=np.std(M_mean[:,i])
+
+
+
     x2=np.arange(0,nIter)
     fig = px.imshow(spin, color_continuous_scale='gray')
     fig.update_layout(width=400, height=400,title='État final des spins')
@@ -445,7 +477,12 @@ def update_figure(stencil,H0,T0,R,Tmax,sigma,D,nIter):
                     customdata=['c.a', 'c.b', 'c.c', 'c.d'],
                     name='Énergie moyenne par spin',
                     mode='lines',
-                    marker={'size': 4}
+                    marker={'size': 4},
+                    error_y=dict(
+            type='data', # value of error bar given in data coordinates
+            array=E_err,
+            visible=True)
+
                 ),
                 dict
                 (
@@ -454,8 +491,12 @@ def update_figure(stencil,H0,T0,R,Tmax,sigma,D,nIter):
                     text=['a', 'b', 'c', 'd'],
                     customdata=['c.a', 'c.b', 'c.c', 'c.d'],
                     name='Magnétisation moyenne',
-                    mode='lines',
-                    marker={'size': 4}
+                    mode='markers',
+                    marker={'size': 4},
+                    error_y=dict(
+            type='data', # value of error bar given in data coordinates
+            array=M_err,
+            visible=True)
                 )
             ],
         'layout': {
