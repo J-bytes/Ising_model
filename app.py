@@ -476,7 +476,7 @@ def update_figure(stencil,repetition,H0,T0,R,Tmax,sigma,D,nIter):
                     text=['a', 'b', 'c', 'd'],
                     customdata=['c.a', 'c.b', 'c.c', 'c.d'],
                     name='Énergie moyenne par spin',
-                    mode='lines',
+                    mode='markers',
                     marker={'size': 4},
                     error_y=dict(
             type='data', # value of error bar given in data coordinates
