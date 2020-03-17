@@ -401,7 +401,7 @@ app.css.append_css({
         value=10,
     ), style= {'padding': 20}),
 
-         html.Label('Coefficient de Diffusion D x10**(3)'),
+         html.Label('Coefficient de Diffusion D x10**(2)'),
     html.Div(dcc.Slider(
         id='D',
         min=0,
