@@ -463,7 +463,7 @@ def update_figure(stencil,repetition,H0,T0,R,Tmax,sigma,D,nIter):
 
 
     spin_moyen_attendu=np.abs(-*np.pi*R**2/66**2+1)
-    if np.abs(np.abs(np.mean(spin))-spin_moyen_attendu)<10/100*spin_moyen_attendu :
+    if np.abs(np.abs(np.mean(spin))-spin_moyen_attendu)<20/100*spin_moyen_attendu :
         stabilite='(stable)'
     else :
         stabilite='(instable)'
