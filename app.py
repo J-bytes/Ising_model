@@ -464,9 +464,9 @@ def update_figure(stencil,repetition,H0,T0,R,Tmax,sigma,D,nIter):
 
     spin_moyen_attendu=-2*R**2/66**2+1
     if np.abs(np.mean(spin)-spin_moyen_attendu)/100<20 :
-        stabilité='(stable)'
+        stabilite='(stable)'
     else :
-        stabilité='(instable)'
+        stabilite='(instable)'
     x2=np.arange(0,nIter)
     fig = px.imshow(spin, color_continuous_scale='gray')
     fig.update_layout(width=400, height=400,title='État final des spins'+stabilite)
