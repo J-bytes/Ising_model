@@ -345,7 +345,7 @@ app.css.append_css({
      html.Label('Répétition pour calcul d\'erreur'),
     html.Div(dcc.Slider(
         id='Repetition',
-        min=0,
+        min=1,
         max=5,
         marks={i: '{}'.format(i) if i == 1 else str(i) for i in range(0,5,1)},
         value=1,
@@ -405,8 +405,8 @@ app.css.append_css({
     html.Div(dcc.Slider(
         id='D',
         min=0,
-        max=5,
-        marks={i: '{}'.format(i) if i == 1 else str(i) for i in range(0,5,1)},
+        max=15,
+        marks={i: '{}'.format(i) if i == 1 else str(i) for i in range(0,15,3)},
         value=1,
     ), style= {'padding': 20}),
 
